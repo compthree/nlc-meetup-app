@@ -1,0 +1,10 @@
+---
+applications:
+- name: cognitive-meetup-app
+  instances: 1
+  memory: 128M
+  services:
+  - nlc-service-meetup
+  env:
+    TYPE_CLASSIFIER_ID: <TYPE_CLASSIFIER_ID>
+    IMPORTANCE_CLASSIFIER_ID: <IMPORTANCE_CLASSIFIER_ID>

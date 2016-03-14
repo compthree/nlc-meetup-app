@@ -1,0 +1,40 @@
+extends layout
+
+mixin classifierOutput(classifierName, classifierResults)
+  h3= classifierName
+  table
+    each c in classifierResults
+        tr(class="result-line")
+          td #{c['label']}:
+          td
+            div(class="progressbar" data-percentage=c['confidence'])
+              div(class="progress-label") #{c['confidence'].toString().substring(0,4)}
+
+block content
+  div(id="wrap")
+    h1 Task Classifier
+    p Classify a given task (e.g. 
+      span(id="email-manager" class="link") Email Manager
+      |  
+      span or
+      |  
+      span(id="mow-the-lawn" class="link") Mow the Lawn
+      span )
+    form(id="classifyForm", name="classifyForm", action="/", method="post")
+      input(id="classifyText", type="text", name="classifyText", autofocus)
+      input(type="submit", value="Classify!")
+
+    if previousClassifyText
+      h2 Results:
+      div Task to classify: 
+        span(class="prev-classify-text") #{previousClassifyText}
+      +classifierOutput("1. Type Classification", typeClassifierResults)
+      +classifierOutput("2. Importance Classification", importanceClassifierResults)
+    div(id="push")
+
+  footer(class="footer")
+    div(class="container")
+      p(class="text-muted") Powered by IBM Watson's
+        |  
+        a(href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/nl-classifier.html") Natural Language Classifier Service
+
