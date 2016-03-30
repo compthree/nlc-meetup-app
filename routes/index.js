@@ -89,22 +89,43 @@ const IMPORTANCE_CLASS_LABELS = [
 ];
 
 /**
- * GET initial form page
+ * Formats the classifier results in a consistent way for the UI
  */
-router.get('/', function(req, res, next) {
-  res.render('index');
-});
+function formatClassifierResults(classLabels, classifierResults) {
+  results = [];
+
+  for(var i = 0; i < classLabels.length; i++) {
+      var entry = {
+        "label": classLabels[i].label,
+        "confidence": getConfidenceByClassName(classLabels[i].className, classifierResults)
+      };
+
+      results.push(entry);
+  }
+
+  return results;
+}
 
 /**
- * POST form data to get classifier results
+ * Gets the confidence for a particular className
  */
-router.post('/', function(req, res, next) {
+function getConfidenceByClassName(className, classifierResults) {
+  for(var i = 0; i < classifierResults.classes.length; i++) {
+      if (className === classifierResults.classes[i].class_name) {
+        return classifierResults.classes[i].confidence;
+      }
+  }
+
+  return "";
+}
+
+function getClassifierData(classifyText, res, completeHook) {
   var typeClassifierResults = null;
   var importanceClassifierResults = null;
-    
+
   // Call the Person / Work classifier
   natural_language_classifier.classify({
-    text: req.body.classifyText,
+    text: classifyText,
     classifier_id: typeClassifierId },
     function(err, response) {
       if (err) {
@@ -118,7 +139,7 @@ router.post('/', function(req, res, next) {
 
   // Call the Importance classifier
   natural_language_classifier.classify({
-    text: req.body.classifyText,
+    text: classifyText,
     classifier_id: importanceClassifierId },
     function(err, response) {
       if (err) {
@@ -135,44 +156,43 @@ router.post('/', function(req, res, next) {
    */
   function complete() {
     if (typeClassifierResults !== null && importanceClassifierResults !== null) {
-      res.render('index', { 
+      completeHook({
         typeClassifierResults: formatClassifierResults(TYPE_CLASS_LABELS, typeClassifierResults),
         importanceClassifierResults: formatClassifierResults(IMPORTANCE_CLASS_LABELS, importanceClassifierResults),
-        previousClassifyText: req.body.classifyText
+        previousClassifyText: classifyText
       });
     }
   }
+}
 
-  /**
-   * Formats the classifier results in a consistent way for the UI
-   */
-  function formatClassifierResults(classLabels, classifierResults) {
-    results = [];
+/**
+ * GET initial form page
+ */
+router.get('/', function(req, res, next) {
+  res.render('index');
+});
 
-    for(var i = 0; i < classLabels.length; i++) { 
-        var entry = {
-          "label": classLabels[i].label,
-          "confidence": getConfidenceByClassName(classLabels[i].className, classifierResults)
-        };
-
-        results.push(entry);
-    }
-
-    return results;
+/**
+ * POST form data to get classifier results
+ */
+router.post('/', function(req, res, next) {
+  function completeHook(data) {
+    res.render('index', data);
   }
 
-  /**
-   * Gets the confidence for a particular className
-   */
-  function getConfidenceByClassName(className, classifierResults) {
-    for(var i = 0; i < classifierResults.classes.length; i++) {
-        if (className === classifierResults.classes[i].class_name) {
-          return classifierResults.classes[i].confidence;
-        }
-    }
+  getClassifierData(req.body.classifyText, res, completeHook);
+});
 
-    return "";
+/**
+ * POST form data to get classifier results
+ */
+router.get('/api', function(req, res, next) {
+  function completeHook(data) {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(data));
   }
+
+  getClassifierData(req.query.classifyText, res, completeHook);
 });
 
 module.exports = router;
